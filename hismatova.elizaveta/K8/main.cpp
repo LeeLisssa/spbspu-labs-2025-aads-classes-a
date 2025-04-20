@@ -145,7 +145,7 @@ int main()
   if (treeRoot != nullptr)
   {
     printInOrder(treeRoot);
-    std::cout << std::endl;
+    std::cout << "\n";
   }
   clearTree(treeRoot);
   return 0;
