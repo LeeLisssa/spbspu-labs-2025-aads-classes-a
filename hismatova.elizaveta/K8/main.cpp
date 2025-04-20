@@ -1,9 +1,10 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <vector>
-#include <limits>
-#include <stdexcept>
+#include <functional>
+
 template< class T, class Cmp >
 struct BiTree
 {
@@ -45,59 +46,36 @@ BiTree< T, Cmp >* extract(BiTree< T, Cmp >* root, const T& value, BiTree< T, Cmp
   {
     return nullptr;
   }
-  if (root->data == value)
+  if (root->cmp(value, root->data))
+  {
+    root->left = extract(root->left, value, result);
+  }
+  else if (root->cmp(root->data, value))
+  {
+    root->right = extract(root->right, value, result);
+  }
+  else
   {
     *result = root;
-    if (!root->left && !root->right)
-    {
-      BiTree< T, Cmp >* temp = root;
-      delete root;
-      return temp;
-    }
     if (!root->left)
     {
-      BiTree< T, Cmp >* temp = root;
-      root = root->right;
-      delete temp;
-      return temp;
+      return root->right;
     }
-    if (!root->right)
+    else if (!root->right)
     {
-      BiTree< T, Cmp >* temp = root;
-      root = root->left;
-      delete temp;
-      return temp;
+      return root->left;
     }
-    BiTree< T, Cmp >* minNode = root->right;
+    BiTree< T,Cmp >* minNode = root->right;
     while (minNode && minNode->left)
     {
       minNode = minNode->left;
     }
     root->data = minNode->data;
-    auto deletedNode = extract(root->right, minNode->data, result);
-    return deletedNode;
+    root->right = extract(root->right, minNode->data, result);
   }
-  if (root->cmp(value, root->data))
-  {
-    root->left = extract(root->left, value, result);
-  }
-  else
-  {
-    root->right = extract(root->right, value, result);
-  }
-  return nullptr;
+  return root;
 }
-void printInOrder(BiTree< int, std::less< int > >* node)
-{
-  if (!node)
-  {
-    return;
-  }
-  printInOrder(node->left);
-  std::cout << node->data << " ";
-  printInOrder(node->right);
-}
-void clearTree(BiTree< int, std::less< int > >* node)
+void clearTree(BiTree< int,std::less< int > >* node)
 {
   if (!node)
   {
@@ -107,55 +85,67 @@ void clearTree(BiTree< int, std::less< int > >* node)
   clearTree(node->right);
   delete node;
 }
+void printInOrder(BiTree< int,std::less< int > >* node)
+{
+  if (!node)
+  {
+    return;
+  }
+  printInOrder(node->left);
+  std::cout << node->data << " ";
+  printInOrder(node->right);
+}
 int main()
 {
-  int length = 0;
-  if (!(std::cin >> length))
+  int n = 0;
+  if (!(std::cin >> n))
   {
-    std::cerr << "ERROR: no length\n";
+    std::cerr << "ERROR: bad data\n";
     return 1;
   }
-  if (length < 0)
-  {
-    std::cerr << "ERROR: invalid length\n";
-    return 1;
-  }
-  BiTree< int, std::less< int > >* treeRoot = nullptr;
-  for (int i = 0; i < length; ++i)
+  BiTree< int,std::less< int > >* treeRoot = nullptr;
+  for (int i = 0; i < n; ++i)
   {
     int value = 0;
     if (!(std::cin >> value))
     {
-      std::cerr << "ERROR: failed to read element\n";
+      std::cerr << "ERROR: bad data\n";
       clearTree(treeRoot);
       return 1;
     }
     treeRoot = insert(treeRoot, value);
   }
-  int deleteValue = 0;
-  while (std::cin >> deleteValue)
+  std::string line;
+  while (std::getline(std::cin >> std::ws , line))
   {
-    BiTree< int, std::less< int > >* deletedNode = nullptr;
-    treeRoot = extract(treeRoot, deleteValue, &deletedNode);
-    if (!deletedNode)
+    int value = 0;
+    try
     {
-      std::cerr << "<INVALID NODE>\n";
-      return 1;
+      value = std::stoi(line);
+      BiTree< int,std::less< int > >* removedNode = nullptr;
+      treeRoot = extract(treeRoot, value, &removedNode);
+      if (!removedNode)
+      {
+        std::cerr << "<INVALID NODE>\n";
+        break;
+      }
+      delete removedNode;
     }
-    else
+    catch (const std::invalid_argument&)
     {
-      delete deletedNode;
-      deletedNode = nullptr;
+      std::cerr << "ERROR: invalid input\n";
+      break;
+    }
+    catch (const std::out_of_range&)
+    {
+      std::cerr << "ERROR: value out of range\n";
+      break;
     }
   }
-  if (std::cin.fail() && !std::cin.eof())
+  if (treeRoot != nullptr)
   {
-    std::cerr.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     printInOrder(treeRoot);
-    std::cerr << "\n";
-    clearTree(treeRoot);
-    return 1;
+    std::cout << std::endl;
   }
   clearTree(treeRoot);
   return 0;
