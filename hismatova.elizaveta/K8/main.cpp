@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <functional>
-
+#include <iterator>
 template< class T, class Cmp >
 struct BiTree
 {
@@ -87,13 +87,20 @@ void clearTree(BiTree< int,std::less< int > >* node)
 }
 void printInOrder(BiTree< int,std::less< int > >* node)
 {
-  if (!node)
+  std::vector< int > values;
+  std::function< void(BiTree< int,std::less< int > >*) > inOrderTraversal = [&](BiTree< int,std::less< int > >* n)
   {
-    return;
+    if (!n) return;
+    inOrderTraversal(n->left);
+    values.push_back(n->data);
+    inOrderTraversal(n->right);
+  };
+  inOrderTraversal(node);
+  if (!values.empty())
+  {
+    std::copy(values.begin(), values.end() - 1, std::ostream_iterator< int >(std::cout, " "));
+    std::cout << values.back();
   }
-  printInOrder(node->left);
-  std::cout << node->data << " ";
-  printInOrder(node->right);
 }
 int main()
 {
